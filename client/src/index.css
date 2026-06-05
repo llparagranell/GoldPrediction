@@ -1,0 +1,117 @@
+@import "tailwindcss";
+
+@theme {
+  --color-dark: #050505;
+  --color-premium: #0e0e0e;
+  --color-card: #141414;
+  --color-accent: #00ffcc;
+  --color-accent-dim: rgba(0, 255, 204, 0.08);
+  --color-buy: #00f57a;
+  --color-sell: #ff4757;
+  --color-border-premium: rgba(255, 255, 255, 0.07);
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Space Grotesk', 'Inter', sans-serif;
+  --font-mono: 'Space Mono', 'Courier New', monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-dark text-white antialiased selection:bg-accent selection:text-dark;
+    font-family: var(--font-sans);
+    background-image: 
+      radial-gradient(circle at 50% -20%, rgba(0, 255, 204, 0.06), transparent 55%),
+      radial-gradient(circle at 0% 0%, rgba(12, 12, 12, 1), rgba(5, 5, 5, 1));
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply tracking-tight font-bold;
+    letter-spacing: -0.03em;
+  }
+
+  .price {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  .label {
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #5a5f6e;
+  }
+
+  /* Sharper number rendering */
+  .numeric {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/[0.04] backdrop-blur-3xl border border-white/[0.08] shadow-[0_20px_60px_-45px_rgba(0,0,0,0.75)];
+  }
+
+  .glass-hover {
+    @apply hover:bg-white/[0.06] hover:border-white/[0.14] transition-all duration-300;
+  }
+
+  .text-glow-accent {
+    text-shadow: 0 0 12px rgba(0, 255, 204, 0.45);
+  }
+
+  .panel-title {
+    font-family: var(--font-sans);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #4a4f5e;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  .premium-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-white/[0.1] rounded-full hover:bg-accent/40 transition-colors;
+  }
+}
+
+@layer utilities {
+  .dashboard-fade {
+    background: radial-gradient(circle at top, rgba(0, 255, 204, 0.1), transparent 40%);
+  }
+}
+
+/* Custom animations */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
