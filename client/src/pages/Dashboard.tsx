@@ -71,20 +71,7 @@ const Dashboard: React.FC = () => {
         </div>
       </main>
 
-      <footer className="border-t border-white/5 bg-premium/55 backdrop-blur-sm px-4 py-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-3 text-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6 text-[11px] text-white/70">
-          <span className="flex items-center gap-2">
-            <span className="w-1 h-1 rounded-full bg-buy animate-pulse" /> Network Stable
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="w-1 h-1 rounded-full bg-accent" /> AI Neural Core v4.2
-          </span>
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:gap-4 text-[11px] text-white/60">
-          <span>© 2026 GOLD PREDICTION SYSTEMS</span>
-          <span className="text-accent/60 italic font-semibold">STAY DISCIPLINED</span>
-        </div>
-      </footer>
+      
     </div>
   );
 };
