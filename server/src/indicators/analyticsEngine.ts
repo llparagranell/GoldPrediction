@@ -1,4 +1,4 @@
-import { EMA, RSI } from 'technicalindicators';
+import { EMA, RSI, ATR } from 'technicalindicators';
 
 let lastIndicators: any = null;
 let lastCalculatedPrice = 0;
@@ -34,6 +34,8 @@ export const calculateIndicators = (bids: number[][], asks: number[][], candles:
   
   const lastEma50 = ema50[ema50.length - 1] || 0;
   const lastEma200 = ema200[ema200.length - 1] || 0;
+  const prevEma50 = ema50[ema50.length - 2] || lastEma50;
+  const prevEma200 = ema200[ema200.length - 2] || lastEma200;
 
   // 3. RSI 14
   const rsiValues = RSI.calculate({ period: 14, values: closes });
@@ -56,6 +58,8 @@ export const calculateIndicators = (bids: number[][], asks: number[][], candles:
     spread,
     ema50: lastEma50,
     ema200: lastEma200,
+    prevEma50,
+    prevEma200,
     rsi: currentRsi,
     isBreakingHigh,
     isBreakingLow,
@@ -63,7 +67,31 @@ export const calculateIndicators = (bids: number[][], asks: number[][], candles:
     currentVolume,
     bidVolume,
     askVolume,
-    priceChange: prevCandle ? currentPrice - prevCandle.close : 0
+    priceChange: prevCandle ? currentPrice - prevCandle.close : 0,
+    currentPrice,
+    // ATR(14)
+    atr: (() => {
+      try {
+        const highs = candles.map(c => c.high);
+        const lows = candles.map(c => c.low);
+        const closes = candles.map(c => c.close);
+        const atrVals = ATR.calculate({ period: 14, high: highs, low: lows, close: closes });
+        return atrVals[atrVals.length - 1] || 0;
+      } catch (e) {
+        return 0;
+      }
+    })(),
+    // Support / Resistance using last 20 candles
+    supportLevel: (() => {
+      const window = candles.slice(-20);
+      if (window.length === 0) return 0;
+      return Math.min(...window.map(c => c.low));
+    })(),
+    resistanceLevel: (() => {
+      const window = candles.slice(-20);
+      if (window.length === 0) return 0;
+      return Math.max(...window.map(c => c.high));
+    })()
   };
 
   lastIndicators = results;

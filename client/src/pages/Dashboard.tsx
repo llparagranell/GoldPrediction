@@ -5,13 +5,15 @@ import OrderBook from '../components/OrderBook';
 import MarketCharts from '../components/MarketCharts';
 import SentimentPanel from '../components/SentimentPanel';
 import NewsPanel from '../components/NewsPanel';
+import IndicatorsModal from '../components/IndicatorsModal';
+import TradeInfoPanel from '../components/TradeInfoPanel';
 import { useMarketStore } from '../store/useStore';
 import io from 'socket.io-client';
 
 const socket = io('http://localhost:5000');
 
 const Dashboard: React.FC = () => {
-  const { setMarketData, setSentiment, symbol, bids, asks, prediction, sentiment } = useMarketStore();
+  const { setMarketData, setSentiment, symbol, bids, asks, prediction, sentiment, indicators, showIndicatorsModal, setShowIndicatorsModal } = useMarketStore();
   const [chartData, setChartData] = useState<any[]>([]);
 
   useEffect(() => {
@@ -42,6 +44,9 @@ const Dashboard: React.FC = () => {
       <Header />
       
       <main className="flex-1 px-4 py-5 md:px-6 md:py-6 lg:px-8 lg:py-8 space-y-6 md:space-y-8 max-w-[1920px] mx-auto w-full">
+        {/* Trade Info Panel - Shows active trade plan */}
+        <TradeInfoPanel />
+
         {/* Top Section: Charts and Panels */}
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 xl:gap-8 flex-1">
           {/* Left Column: Prediction & Sentiment */}
@@ -71,7 +76,12 @@ const Dashboard: React.FC = () => {
         </div>
       </main>
 
-      
+      {/* Global Indicators Modal */}
+      <IndicatorsModal 
+        isOpen={showIndicatorsModal}
+        indicators={indicators}
+        onClose={() => setShowIndicatorsModal(false)}
+      />
     </div>
   );
 };

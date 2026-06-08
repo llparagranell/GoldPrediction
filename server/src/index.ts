@@ -27,9 +27,11 @@ connectDB();
 import authRoutes from './api/auth';
 import marketRoutes from './api/market';
 import backtestRoutes from './api/backtest';
+import tradeRoutes from './api/trade';
 app.use('/api/auth', authRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/backtest', backtestRoutes);
+app.use('/api/trade', tradeRoutes);
 
 // Global Market Data Stream Management
 import { initBinanceStream } from './websocket/binanceCollector';

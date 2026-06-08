@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useMarketStore } from '../store/useStore';
-import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, Activity } from 'lucide-react';
+import TradeModal from './TradeModal';
 
 interface PredictionPanelProps {
   prediction: {
@@ -11,7 +12,39 @@ interface PredictionPanelProps {
 }
 
 const PredictionPanel: React.FC<PredictionPanelProps> = ({ prediction }) => {
-  const { symbol } = useMarketStore();
+  const { symbol, indicators, price, setTradePlan, tradePlan, setShowIndicatorsModal } = useMarketStore();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const handleExecuteMarketTrade = async (signal: 'BUY' | 'SELL') => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('http://localhost:5000/api/trade/plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entryPrice: price,
+          atr: indicators.atr || 1.5,
+          supportLevel: indicators.supportLevel || (price - 5),
+          resistanceLevel: indicators.resistanceLevel || (price + 5),
+          riskRewardRatio: 2
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to compute trade plan');
+      }
+      
+      const plan = await response.json();
+      setTradePlan(plan);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      console.error('Trade plan error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const isBuy = prediction.signal === 'BUY';
   const isSell = prediction.signal === 'SELL';
@@ -36,7 +69,16 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({ prediction }) => {
 
       {/* Header */}
       <div className="relative z-10 mb-5">
-        <span className="label mb-2 block">{symbol} · Decision Engine</span>
+        <div className="flex items-center justify-between mb-2">
+          <span className="label">{symbol} · Decision Engine</span>
+          <button
+            onClick={() => setShowIndicatorsModal(true)}
+            className="p-2 hover:bg-white/10 rounded-lg transition group"
+            title="View Indicators"
+          >
+            <Activity className="w-4 h-4 text-gray-400 group-hover:text-white transition" />
+          </button>
+        </div>
         <div className="flex items-end justify-between">
           <div
             className={`text-5xl font-bold leading-none tracking-[-0.04em] ${colorClass}`}
@@ -94,15 +136,28 @@ const PredictionPanel: React.FC<PredictionPanelProps> = ({ prediction }) => {
         )}
         {(isBuy || isSell) && (
           <div className="grid grid-cols-2 gap-3">
-            <button className={`h-11 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all ${isBuy ? 'bg-buy text-dark shadow-[0_0_20px_rgba(0,245,122,0.3)] hover:scale-[1.02]' : 'bg-white/[0.04] text-white/20 cursor-not-allowed'}`}>
-              Market Buy
+            <button 
+              onClick={() => handleExecuteMarketTrade('BUY')}
+              disabled={loading}
+              className={`h-11 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all ${isBuy ? 'bg-buy text-dark shadow-[0_0_20px_rgba(0,245,122,0.3)] hover:scale-[1.02] disabled:opacity-50' : 'bg-white/[0.04] text-white/20 cursor-not-allowed'}`}>
+              {loading ? 'Loading...' : 'Market Buy'}
             </button>
-            <button className={`h-11 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all ${isSell ? 'bg-sell text-white shadow-[0_0_20px_rgba(255,71,87,0.3)] hover:scale-[1.02]' : 'bg-white/[0.04] text-white/20 cursor-not-allowed'}`}>
-              Market Sell
+            <button 
+              onClick={() => handleExecuteMarketTrade('SELL')}
+              disabled={loading}
+              className={`h-11 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all ${isSell ? 'bg-sell text-white shadow-[0_0_20px_rgba(255,71,87,0.3)] hover:scale-[1.02] disabled:opacity-50' : 'bg-white/[0.04] text-white/20 cursor-not-allowed'}`}>
+              {loading ? 'Loading...' : 'Market Sell'}
             </button>
           </div>
         )}
       </div>
+
+      {/* Trade Modal */}
+      <TradeModal 
+        isOpen={!!tradePlan} 
+        tradePlan={tradePlan} 
+        onClose={() => setTradePlan(null)} 
+      />
     </div>
   );
 };

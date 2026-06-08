@@ -8,9 +8,13 @@ interface MarketState {
   indicators: any;
   prediction: any;
   sentiment: any;
+  tradePlan: any;
+  showIndicatorsModal: boolean;
   setMarketData: (data: any) => void;
   setSentiment: (data: any) => void;
   setSymbol: (symbol: string) => void;
+  setTradePlan: (plan: any) => void;
+  setShowIndicatorsModal: (show: boolean) => void;
 }
 
 export const useMarketStore = create<MarketState>((set) => ({
@@ -21,6 +25,8 @@ export const useMarketStore = create<MarketState>((set) => ({
   indicators: {},
   prediction: {},
   sentiment: {},
+  tradePlan: null,
+  showIndicatorsModal: false,
   setMarketData: (data) => set({
     symbol: data.symbol?.toUpperCase() || 'PAXGUSDT',
     bids: data.bids,
@@ -30,7 +36,9 @@ export const useMarketStore = create<MarketState>((set) => ({
     price: data.bids[0]?.[0] || 0
   }),
   setSentiment: (data) => set({ sentiment: data }),
-  setSymbol: (symbol) => set({ symbol })
+  setSymbol: (symbol) => set({ symbol }),
+  setTradePlan: (plan) => set({ tradePlan: plan }),
+  setShowIndicatorsModal: (show) => set({ showIndicatorsModal: show })
 }));
 
 interface AuthState {
