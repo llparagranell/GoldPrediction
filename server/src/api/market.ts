@@ -6,6 +6,11 @@ import { auth } from '../middleware/auth';
 
 const router = express.Router();
 
+// Server health check
+router.get('/health', async (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });
+});
+
 // Get recent predictions
 router.get('/predictions', async (req, res) => {
   try {

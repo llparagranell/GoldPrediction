@@ -12,6 +12,7 @@ let lastUpdate = 0;
 const UPDATE_THROTTLE_MS = 500; // Emit max 2 times per second
 
 let restInterval: NodeJS.Timeout | null = null;
+let binanceUnavailable = false;
 
 const cleanupRest = () => {
   if (restInterval) {
@@ -25,13 +26,42 @@ const startBinanceRestPolling = (io: Server, symbol: string) => {
   const symbolUpper = symbol.toUpperCase();
 
   const poll = async () => {
+    if (binanceUnavailable) return;
     try {
       const depthResp = await fetch(`https://api.binance.com/api/v3/depth?symbol=${symbolUpper}&limit=20`);
-      if (!depthResp.ok) throw new Error(`Depth fetch failed ${depthResp.status}`);
+      if (!depthResp.ok) {
+        if (depthResp.status === 451) {
+          console.warn('[Binance REST] Depth fetch returned 451 — access restricted in this environment');
+          binanceUnavailable = true;
+          cleanupRest();
+          io.emit('marketUpdate', {
+            symbol,
+            source: 'binance-unavailable',
+            error: 451,
+            message: 'Binance data unavailable due to legal restriction (451)'
+          });
+          return;
+        }
+        throw new Error(`Depth fetch failed ${depthResp.status}`);
+      }
       const depthData = await depthResp.json();
 
       const klinesResp = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbolUpper}&interval=1m&limit=250`);
-      if (!klinesResp.ok) throw new Error(`Klines fetch failed ${klinesResp.status}`);
+      if (!klinesResp.ok) {
+        if (klinesResp.status === 451) {
+          console.warn('[Binance REST] Klines fetch returned 451 — access restricted in this environment');
+          binanceUnavailable = true;
+          cleanupRest();
+          io.emit('marketUpdate', {
+            symbol,
+            source: 'binance-unavailable',
+            error: 451,
+            message: 'Binance data unavailable due to legal restriction (451)'
+          });
+          return;
+        }
+        throw new Error(`Klines fetch failed ${klinesResp.status}`);
+      }
       const klineData = await klinesResp.json();
 
       const bids = depthData.bids?.map((b: any) => [parseFloat(b[0]), parseFloat(b[1])]) || [];
