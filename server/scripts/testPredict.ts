@@ -1,5 +1,8 @@
+/// <reference types="node" />
 import { calculateIndicators } from '../src/indicators/analyticsEngine';
 import { predictSignal } from '../src/ai/predictionEngine';
+
+declare const process: any;
 
 const bids = [[100, 1]];
 const asks = [[101, 1]];
