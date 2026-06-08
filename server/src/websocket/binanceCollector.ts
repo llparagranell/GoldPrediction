@@ -11,6 +11,66 @@ const MAX_CANDLES = 250; // Enough for EMA 200
 let lastUpdate = 0;
 const UPDATE_THROTTLE_MS = 500; // Emit max 2 times per second
 
+let restInterval: NodeJS.Timeout | null = null;
+
+const cleanupRest = () => {
+  if (restInterval) {
+    clearInterval(restInterval);
+    restInterval = null;
+  }
+};
+
+const startBinanceRestPolling = (io: Server, symbol: string) => {
+  cleanupRest();
+  const symbolUpper = symbol.toUpperCase();
+
+  const poll = async () => {
+    try {
+      const depthResp = await fetch(`https://api.binance.com/api/v3/depth?symbol=${symbolUpper}&limit=20`);
+      if (!depthResp.ok) throw new Error(`Depth fetch failed ${depthResp.status}`);
+      const depthData = await depthResp.json();
+
+      const klinesResp = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbolUpper}&interval=1m&limit=250`);
+      if (!klinesResp.ok) throw new Error(`Klines fetch failed ${klinesResp.status}`);
+      const klineData = await klinesResp.json();
+
+      const bids = depthData.bids?.map((b: any) => [parseFloat(b[0]), parseFloat(b[1])]) || [];
+      const asks = depthData.asks?.map((a: any) => [parseFloat(a[0]), parseFloat(a[1])]) || [];
+      const currentPrice = bids[0]?.[0] || 0;
+
+      const newCandles = klineData.map((item: any) => ({
+        time: item[0],
+        open: parseFloat(item[1]),
+        high: parseFloat(item[2]),
+        low: parseFloat(item[3]),
+        close: parseFloat(item[4]),
+        volume: parseFloat(item[5])
+      }));
+
+      candles = newCandles.slice(-MAX_CANDLES);
+
+      const indicators = calculateIndicators(bids, asks, candles, currentPrice);
+      const prediction = await predictSignal(indicators);
+      const now = Date.now();
+
+      io.emit('marketUpdate', {
+        symbol,
+        bids: bids.slice(0, 10),
+        asks: asks.slice(0, 10),
+        indicators,
+        prediction,
+        timestamp: now,
+        source: 'binance-rest'
+      });
+    } catch (err) {
+      console.error('[Binance REST] Polling error:', err);
+    }
+  };
+
+  poll();
+  restInterval = setInterval(poll, 5000);
+};
+
 export const initBinanceStream = (io: Server, symbol: string = 'paxgusdt') => {
   // Subscribe to both Depth and Kline streams
   const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${symbol}@depth20@1000ms/${symbol}@kline_1m`);
@@ -83,10 +143,20 @@ export const initBinanceStream = (io: Server, symbol: string = 'paxgusdt') => {
 
   ws.on('error', (err) => {
     console.error(`[Binance] Stream ERROR (${symbol}):`, err);
+    if (err instanceof Error && err.message.includes('451')) {
+      console.warn('[Binance] WebSocket blocked by legal restriction, switching to REST polling fallback');
+      cleanupRest();
+      startBinanceRestPolling(io, symbol);
+    }
   });
 
   ws.on('close', (code, reason) => {
     console.log(`[Binance] Stream CLOSED for ${symbol}. Code: ${code}, Reason: ${reason}`);
+    if (code === 1006 || code === 1001 || code === 1005) {
+      console.warn('[Binance] WebSocket closed unexpectedly, starting REST polling fallback');
+      cleanupRest();
+      startBinanceRestPolling(io, symbol);
+    }
   });
 
   return ws;
